@@ -1,0 +1,109 @@
+#
+# Centralised table and field contracts for ETL.
+# This file mirrors the high‑level definitions in docs/data_contracts.md
+# and should be kept in sync when schemas evolve.
+#
+
+ods_daily_bar:
+  primary_key: [security_id, trade_date]
+  fields:
+    security_id: STRING
+    trade_date: DATE
+    open: DECIMAL(18,4)
+    high: DECIMAL(18,4)
+    low: DECIMAL(18,4)
+    close: DECIMAL(18,4)
+    pre_close: DECIMAL(18,4)
+    change: DECIMAL(18,4)
+    pct_change: DECIMAL(10,4)
+    vol: DECIMAL(20,2)
+    amount: DECIMAL(20,4)
+    adj_factor: DECIMAL(18,8)
+    source: STRING
+    ingest_batch_id: STRING
+    updated_at: DATETIME
+
+ods_financial_statement:
+  primary_key: [security_id, report_period, statement_type]
+  fields:
+    security_id: STRING
+    report_period: DATE
+    announce_date: DATE
+    statement_type: STRING
+    fiscal_year: INT
+    fiscal_quarter: INT
+    total_revenue: DECIMAL(20,4)
+    net_profit: DECIMAL(20,4)
+    total_assets: DECIMAL(20,4)
+    total_liabilities: DECIMAL(20,4)
+    operating_cashflow: DECIMAL(20,4)
+    roe: DECIMAL(10,4)
+    gross_margin: DECIMAL(10,4)
+    eps: DECIMAL(10,4)
+    net_profit_yoy: DECIMAL(10,4)
+    source: STRING
+    ingest_batch_id: STRING
+    updated_at: DATETIME
+
+ods_account_equity_daily:
+  primary_key: [account_id, trade_date]
+  fields:
+    account_id: STRING
+    trade_date: DATE
+    total_equity: DECIMAL(20,4)
+    cash: DECIMAL(20,4)
+    frozen_cash: DECIMAL(20,4)
+    market_value: DECIMAL(20,4)
+    available_funds: DECIMAL(20,4)
+    leverage_ratio: DECIMAL(10,4)
+    source: STRING
+    ingest_batch_id: STRING
+    updated_at: DATETIME
+
+ods_position_snapshot:
+  primary_key: [account_id, security_id, snapshot_time]
+  fields:
+    account_id: STRING
+    security_id: STRING
+    snapshot_time: DATETIME
+    quantity: DECIMAL(20,4)
+    available_qty: DECIMAL(20,4)
+    avg_cost: DECIMAL(18,4)
+    market_price: DECIMAL(18,4)
+    market_value: DECIMAL(20,4)
+    unrealized_pnl: DECIMAL(20,4)
+    realized_pnl_daily: DECIMAL(20,4)
+    source: STRING
+    ingest_batch_id: STRING
+    updated_at: DATETIME
+
+ods_trade:
+  primary_key: [trade_id]
+  fields:
+    trade_id: STRING
+    order_id: STRING
+    account_id: STRING
+    security_id: STRING
+    trade_time: DATETIME
+    side: STRING
+    price: DECIMAL(18,4)
+    quantity: DECIMAL(20,4)
+    amount: DECIMAL(20,4)
+    fee: DECIMAL(18,4)
+    tax: DECIMAL(18,4)
+    source: STRING
+    ingest_batch_id: STRING
+    updated_at: DATETIME
+
+dwd_factor_value:
+  primary_key: [security_id, trade_date, factor_id]
+  fields:
+    security_id: STRING
+    trade_date: DATE
+    factor_id: STRING
+    factor_value: DECIMAL(20,6)
+    value_type: STRING
+    calc_version: STRING
+    source: STRING
+    updated_at: DATETIME
+
