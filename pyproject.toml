@@ -1,0 +1,15 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = ["logs", "init-db"]
+
+[tool.ruff.lint]
+# Pragmatic ruleset for a work-in-progress ETL repo: catch real errors
+# (undefined names, syntax) and obvious problems, without nagging about
+# unused imports/variables left in stub/placeholder code.
+select = ["E9", "F"]
+ignore = ["F401", "F841"]

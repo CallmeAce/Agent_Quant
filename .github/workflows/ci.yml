@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: openclaw
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: quant_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U openclaw -d quant_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg2://openclaw:postgres@localhost:5432/quant_db
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Apply database schema
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f init-db/init.sql
+
+      - name: Lint (ruff)
+        run: python -m ruff check .
+
+      - name: Test (pytest)
+        run: python -m pytest

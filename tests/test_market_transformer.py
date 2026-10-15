@@ -1,0 +1,73 @@
+import numpy as np
+import pandas as pd
+
+from etl.transformers.market_transformer import standardize_daily_bar
+
+
+def _raw() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "ts_code": "600000.SH", "trade_date": "20260102", "open": 10,
+                "high": 11, "low": 10, "close": 11, "pre_close": 10,
+                "vol": 5, "amount": 3,
+            },
+            {
+                "ts_code": "000001.SZ", "trade_date": "20260102", "open": 0,
+                "high": 0, "low": 0, "close": 0, "pre_close": 0,
+                "vol": 1, "amount": 1,
+            },
+            {
+                "ts_code": "999999.XX", "trade_date": "20260102", "open": 1,
+                "high": 1, "low": 1, "close": 1, "pre_close": 1,
+                "vol": 1, "amount": 1,
+            },
+        ]
+    )
+
+
+def _run(adj_df=None) -> pd.DataFrame:
+    return standardize_daily_bar(
+        _raw(),
+        security_map={"600000.SH": "CN.600000.SSE", "000001.SZ": "CN.000001.SZ"},
+        batch_id="b1",
+        source="tushare",
+        adj_df=adj_df,
+    ).reset_index(drop=True)
+
+
+def test_empty_input_returns_empty():
+    out = standardize_daily_bar(pd.DataFrame(), {}, "b", "tushare")
+    assert out.empty
+
+
+def test_pct_change_and_units():
+    out = _run()
+    r0 = out.iloc[0]
+    assert r0["security_id"] == "CN.600000.SSE"
+    assert abs(r0["pct_change"] - 0.1) < 1e-9
+    assert r0["vol"] == 500  # lots -> shares
+    assert r0["amount"] == 3000  # k-yuan -> yuan
+
+
+def test_zero_pre_close_gives_nan_not_inf():
+    out = _run()
+    assert np.isnan(out.iloc[1]["pct_change"])
+
+
+def test_adj_factor_merged_or_null():
+    adj = pd.DataFrame([{"ts_code": "600000.SH", "adj_factor": 1.234}])
+    out = _run(adj_df=adj)
+    assert abs(out.iloc[0]["adj_factor"] - 1.234) < 1e-9
+    # missing factor -> NULL, never 1.0
+    assert pd.isna(out.iloc[1]["adj_factor"])
+
+
+def test_unmapped_security_is_nan():
+    out = _run()
+    assert pd.isna(out.iloc[2]["security_id"])
+
+
+def test_updated_at_is_tz_aware():
+    out = _run()
+    assert out["updated_at"].iloc[0].tzinfo is not None
