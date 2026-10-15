@@ -4,6 +4,24 @@
 # and should be kept in sync when schemas evolve.
 #
 
+dim_security:
+  primary_key: [security_id]
+  fields:
+    security_id: STRING
+    ts_code: STRING
+    qmt_code: STRING
+    symbol: STRING
+    name: STRING
+    exchange: STRING
+    security_type: STRING
+    list_date: DATE
+    delist_date: DATE
+    status: STRING
+    currency: STRING
+    lot_size: INT
+    created_at: DATETIME
+    updated_at: DATETIME
+
 ods_daily_bar:
   primary_key: [security_id, trade_date]
   fields:

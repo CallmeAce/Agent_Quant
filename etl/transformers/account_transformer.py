@@ -4,7 +4,7 @@ Account & trade transformers (QMT -> ODS contracts).
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd  # type: ignore
 
@@ -31,7 +31,7 @@ def standardize_positions(raw_df: pd.DataFrame, batch_id: str, source: str) -> p
     df["realized_pnl_daily"] = df.get("realized_pnl_daily", 0.0)
     df["source"] = source
     df["ingest_batch_id"] = batch_id
-    df["updated_at"] = datetime.utcnow()
+    df["updated_at"] = datetime.now(timezone.utc)
     return df[
         [
             "account_id",
