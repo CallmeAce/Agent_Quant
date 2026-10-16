@@ -1,0 +1,39 @@
+# Strategy definitions consumed by etl/strategies/registry.py.
+# factor_weights: weighted sum of z-scored factor values (higher composite = higher rank).
+# filters: exclude a security when its z-score breaches the threshold.
+strategies:
+  CN_VALUE_MID_V1:
+    factor_weights:
+      EARNINGS_YIELD: 0.30
+      BOOK_YIELD: 0.20
+      DIVIDEND_YIELD_TTM: 0.10
+      ROE_TTM: 0.20
+      NET_MARGIN: 0.10
+      REV_GROWTH_YOY: 0.10
+    filters:
+      - factor_id: DEBT_TO_EQUITY
+        op: ">"
+        threshold: 2.0
+      - factor_id: ROE_TTM
+        op: "<"
+        threshold: -2.0
+    top_n: 30
+    rebalance: monthly
+    direction: BUY
+
+  CN_MOM_SWING_V1:
+    factor_weights:
+      MOM_20D: 0.40
+      MOM_60D: 0.30
+      VOL_MOM_20D: 0.20
+      ROE_TTM: 0.10
+    filters:
+      - factor_id: LOG_TOTAL_MV
+        op: "<"
+        threshold: -1.0
+      - factor_id: TURNOVER_20D
+        op: "<"
+        threshold: -1.0
+    top_n: 20
+    rebalance: weekly
+    direction: BUY

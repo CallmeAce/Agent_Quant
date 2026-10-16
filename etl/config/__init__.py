@@ -41,5 +41,13 @@ def load_factor_pipeline() -> dict:
     }
 
 
+def load_strategies() -> dict:
+    """Load strategy definitions (strategy_id -> config dict)."""
+    path = BASE_DIR / "strategies.yml"
+    with path.open("r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    return dict(data.get("strategies", {}))
+
+
 CONTRACTS = load_table_contracts()
 

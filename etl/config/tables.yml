@@ -178,3 +178,20 @@ ods_index_daily:
     ingest_batch_id: STRING
     updated_at: DATETIME
 
+dm_strategy_signal:
+  primary_key: [strategy_id, security_id, signal_time, signal_type]
+  fields:
+    strategy_id: STRING
+    security_id: STRING
+    signal_time: DATETIME
+    signal_type: STRING
+    direction: STRING
+    target_weight: DECIMAL(10,4)
+    price_hint_min: DECIMAL(18,4)
+    price_hint_max: DECIMAL(18,4)
+    valid_from: DATETIME
+    valid_to: DATETIME
+    comment: STRING
+    source: STRING
+    created_at: DATETIME
+
