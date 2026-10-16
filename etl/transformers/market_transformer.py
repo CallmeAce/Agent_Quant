@@ -92,3 +92,82 @@ def standardize_daily_bar(
     ]
     return df[cols]  # type: ignore[return-value]
 
+
+def _map_security(df: pd.DataFrame, security_map: Mapping[str, str]) -> pd.DataFrame:
+    df["security_id"] = df["ts_code"].map(security_map)
+    return df
+
+
+def _normalize_date(df: pd.DataFrame, col: str = "trade_date") -> pd.DataFrame:
+    df[col] = pd.to_datetime(df[col]).dt.date
+    return df
+
+
+def _ensure(df: pd.DataFrame, col: str, value=None) -> None:
+    if col not in df.columns:
+        df[col] = value
+
+
+def standardize_daily_basic(
+    raw_df: pd.DataFrame,
+    security_map: Mapping[str, str],
+    batch_id: str,
+    source: str,
+) -> pd.DataFrame:
+    """Map Tushare daily_basic to the ods_daily_basic contract."""
+    if raw_df.empty:
+        return raw_df
+
+    df = raw_df.copy()
+    _map_security(df, security_map)
+    _normalize_date(df)
+    for col in [
+        "close", "turnover_rate", "turnover_rate_f", "volume_ratio",
+        "pe", "pe_ttm", "pb", "ps", "ps_ttm", "dv_ratio", "dv_ttm",
+        "total_share", "float_share", "total_mv", "circ_mv",
+    ]:
+        _ensure(df, col)
+    df["source"] = source
+    df["ingest_batch_id"] = batch_id
+    df["updated_at"] = datetime.now(timezone.utc)
+
+    cols = [
+        "security_id", "trade_date", "close", "turnover_rate", "turnover_rate_f",
+        "volume_ratio", "pe", "pe_ttm", "pb", "ps", "ps_ttm", "dv_ratio", "dv_ttm",
+        "total_share", "float_share", "total_mv", "circ_mv",
+        "source", "ingest_batch_id", "updated_at",
+    ]
+    return df[cols]  # type: ignore[return-value]
+
+
+def standardize_index_daily(
+    raw_df: pd.DataFrame,
+    batch_id: str,
+    source: str,
+) -> pd.DataFrame:
+    """Map Tushare index_daily to the ods_index_daily contract."""
+    if raw_df.empty:
+        return raw_df
+
+    df = raw_df.copy()
+    df["index_id"] = df["ts_code"]
+    _normalize_date(df)
+    for col in ["open", "high", "low", "close", "pre_close", "vol", "amount"]:
+        _ensure(df, col)
+    close = pd.to_numeric(df["close"], errors="coerce")
+    pre_close = pd.to_numeric(df["pre_close"], errors="coerce")
+    df["pct_change"] = np.where(
+        pre_close.notna() & (pre_close != 0), (close - pre_close) / pre_close, np.nan
+    )
+    df["vol"] = pd.to_numeric(df["vol"], errors="coerce") * VOL_LOT_TO_SHARES
+    df["amount"] = pd.to_numeric(df["amount"], errors="coerce") * AMOUNT_KYUAN_TO_YUAN
+    df["source"] = source
+    df["ingest_batch_id"] = batch_id
+    df["updated_at"] = datetime.now(timezone.utc)
+
+    cols = [
+        "index_id", "trade_date", "open", "high", "low", "close", "pre_close",
+        "pct_change", "vol", "amount", "source", "ingest_batch_id", "updated_at",
+    ]
+    return df[cols]  # type: ignore[return-value]
+

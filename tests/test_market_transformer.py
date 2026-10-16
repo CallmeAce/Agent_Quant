@@ -1,7 +1,11 @@
 import numpy as np
 import pandas as pd
 
-from etl.transformers.market_transformer import standardize_daily_bar
+from etl.transformers.market_transformer import (
+    standardize_daily_bar,
+    standardize_daily_basic,
+    standardize_index_daily,
+)
 
 
 def _raw() -> pd.DataFrame:
@@ -71,3 +75,34 @@ def test_unmapped_security_is_nan():
 def test_updated_at_is_tz_aware():
     out = _run()
     assert out["updated_at"].iloc[0].tzinfo is not None
+
+
+def test_daily_basic_maps_and_defaults_missing_columns():
+    raw = pd.DataFrame(
+        [
+            {"ts_code": "600000.SH", "trade_date": "20260102", "close": 10,
+             "turnover_rate": 1.5, "pe_ttm": 8.0, "pb": 1.1, "total_mv": 1e6}
+        ]
+    )
+    out = standardize_daily_basic(raw, {"600000.SH": "CN.600000.SSE"}, "b", "tushare")
+    r = out.iloc[0]
+    assert r["security_id"] == "CN.600000.SSE"
+    assert r["pe_ttm"] == 8.0
+    # missing columns are present as NaN, not KeyError
+    assert "dv_ttm" in out.columns and pd.isna(r["dv_ttm"])
+    assert out["updated_at"].iloc[0].tzinfo is not None
+
+
+def test_index_daily_pct_and_units():
+    raw = pd.DataFrame(
+        [
+            {"ts_code": "000300.SH", "trade_date": "20260102", "open": 100, "high": 110,
+             "low": 100, "close": 110, "pre_close": 100, "vol": 5, "amount": 3}
+        ]
+    )
+    out = standardize_index_daily(raw, "b", "tushare")
+    r = out.iloc[0]
+    assert r["index_id"] == "000300.SH"
+    assert abs(r["pct_change"] - 0.1) < 1e-9
+    assert r["vol"] == 500
+    assert r["amount"] == 3000

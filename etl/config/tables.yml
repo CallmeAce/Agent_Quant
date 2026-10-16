@@ -54,10 +54,14 @@ ods_financial_statement:
     net_profit: DECIMAL(20,4)
     total_assets: DECIMAL(20,4)
     total_liabilities: DECIMAL(20,4)
+    total_equity: DECIMAL(20,4)
     operating_cashflow: DECIMAL(20,4)
     roe: DECIMAL(10,4)
+    roa: DECIMAL(10,4)
     gross_margin: DECIMAL(10,4)
+    net_margin: DECIMAL(10,4)
     eps: DECIMAL(10,4)
+    revenue_yoy: DECIMAL(10,4)
     net_profit_yoy: DECIMAL(10,4)
     source: STRING
     ingest_batch_id: STRING
@@ -123,5 +127,54 @@ dwd_factor_value:
     value_type: STRING
     calc_version: STRING
     source: STRING
+    updated_at: DATETIME
+
+dim_trade_calendar:
+  primary_key: [exchange, trade_date]
+  fields:
+    exchange: STRING
+    trade_date: DATE
+    is_trading_day: INT
+    previous_trading_date: DATE
+
+ods_daily_basic:
+  primary_key: [security_id, trade_date]
+  fields:
+    security_id: STRING
+    trade_date: DATE
+    close: DECIMAL(18,4)
+    turnover_rate: DECIMAL(10,4)
+    turnover_rate_f: DECIMAL(10,4)
+    volume_ratio: DECIMAL(10,4)
+    pe: DECIMAL(18,6)
+    pe_ttm: DECIMAL(18,6)
+    pb: DECIMAL(18,6)
+    ps: DECIMAL(18,6)
+    ps_ttm: DECIMAL(18,6)
+    dv_ratio: DECIMAL(10,4)
+    dv_ttm: DECIMAL(10,4)
+    total_share: DECIMAL(20,4)
+    float_share: DECIMAL(20,4)
+    total_mv: DECIMAL(20,4)
+    circ_mv: DECIMAL(20,4)
+    source: STRING
+    ingest_batch_id: STRING
+    updated_at: DATETIME
+
+ods_index_daily:
+  primary_key: [index_id, trade_date]
+  fields:
+    index_id: STRING
+    trade_date: DATE
+    open: DECIMAL(18,4)
+    high: DECIMAL(18,4)
+    low: DECIMAL(18,4)
+    close: DECIMAL(18,4)
+    pre_close: DECIMAL(18,4)
+    pct_change: DECIMAL(10,4)
+    vol: DECIMAL(20,2)
+    amount: DECIMAL(20,4)
+    source: STRING
+    ingest_batch_id: STRING
     updated_at: DATETIME
 

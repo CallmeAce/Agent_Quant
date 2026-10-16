@@ -85,9 +85,104 @@ class TushareExtractor:
         """
         return self._call("adj_factor", trade_date=trade_date.strftime("%Y%m%d"))
 
+    def get_daily_bar_range(self, ts_code: str, start_date: date, end_date: date) -> pd.DataFrame:
+        """Fetch daily bars for one security over a date range."""
+        return self._call(
+            "daily",
+            ts_code=ts_code,
+            start_date=start_date.strftime("%Y%m%d"),
+            end_date=end_date.strftime("%Y%m%d"),
+        )
+
+    def get_adj_factor_range(self, ts_code: str, start_date: date, end_date: date) -> pd.DataFrame:
+        """Fetch adjustment factors for one security over a date range."""
+        return self._call(
+            "adj_factor",
+            ts_code=ts_code,
+            start_date=start_date.strftime("%Y%m%d"),
+            end_date=end_date.strftime("%Y%m%d"),
+        )
+
     def get_stock_basic(self, list_status: str = "L") -> pd.DataFrame:
         """
         Fetch the security master list (ts_code, symbol, name, exchange, ...).
         """
         return self._call("stock_basic", exchange="", list_status=list_status)
+
+    def get_daily_basic(self, ts_code: str, start_date: date, end_date: date) -> pd.DataFrame:
+        """
+        Daily basic indicators (pe/pb/ps, dividend yield, turnover, market cap).
+        """
+        return self._call(
+            "daily_basic",
+            ts_code=ts_code,
+            start_date=start_date.strftime("%Y%m%d"),
+            end_date=end_date.strftime("%Y%m%d"),
+        )
+
+    def get_fina_indicator(self, ts_code: str, start_date: date, end_date: date) -> pd.DataFrame:
+        """
+        Financial quality/growth ratios (roe, margins, debt ratios, yoy growth).
+        """
+        return self._call(
+            "fina_indicator",
+            ts_code=ts_code,
+            start_date=start_date.strftime("%Y%m%d"),
+            end_date=end_date.strftime("%Y%m%d"),
+        )
+
+    def get_income(self, ts_code: str, start_date: date, end_date: date) -> pd.DataFrame:
+        """
+        Income statement (revenue, net profit).
+        """
+        return self._call(
+            "income",
+            ts_code=ts_code,
+            start_date=start_date.strftime("%Y%m%d"),
+            end_date=end_date.strftime("%Y%m%d"),
+        )
+
+    def get_balancesheet(self, ts_code: str, start_date: date, end_date: date) -> pd.DataFrame:
+        """
+        Balance sheet (assets, liabilities, equity).
+        """
+        return self._call(
+            "balancesheet",
+            ts_code=ts_code,
+            start_date=start_date.strftime("%Y%m%d"),
+            end_date=end_date.strftime("%Y%m%d"),
+        )
+
+    def get_cashflow(self, ts_code: str, start_date: date, end_date: date) -> pd.DataFrame:
+        """
+        Cash flow statement (operating cash flow).
+        """
+        return self._call(
+            "cashflow",
+            ts_code=ts_code,
+            start_date=start_date.strftime("%Y%m%d"),
+            end_date=end_date.strftime("%Y%m%d"),
+        )
+
+    def get_trade_cal(self, exchange: str, start_date: date, end_date: date) -> pd.DataFrame:
+        """
+        Trading calendar for an exchange (SSE/SZSE).
+        """
+        return self._call(
+            "trade_cal",
+            exchange=exchange,
+            start_date=start_date.strftime("%Y%m%d"),
+            end_date=end_date.strftime("%Y%m%d"),
+        )
+
+    def get_index_daily(self, ts_code: str, start_date: date, end_date: date) -> pd.DataFrame:
+        """
+        Index daily bars (benchmark), e.g. 000300.SH.
+        """
+        return self._call(
+            "index_daily",
+            ts_code=ts_code,
+            start_date=start_date.strftime("%Y%m%d"),
+            end_date=end_date.strftime("%Y%m%d"),
+        )
 

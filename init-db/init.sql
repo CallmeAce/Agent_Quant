@@ -229,3 +229,59 @@ INSERT INTO dim_factor (factor_id, name, category, description, update_freq, sta
     ('VOLATILITY_20D', '20 日波动率', 'volatility', '20-day historical volatility', 'daily', 'active'),
     ('TURNOVER_20D', '20 日换手率', 'liquidity', '20-day average turnover rate', 'daily', 'active')
 ON CONFLICT (factor_id) DO NOTHING;
+
+-- ============================================================
+-- Phase A additions: daily_basic, index daily, financial extensions
+-- ============================================================
+
+-- Extend ods_financial_statement with columns needed by quality/growth factors
+ALTER TABLE ods_financial_statement ADD COLUMN IF NOT EXISTS total_equity DECIMAL(20,4);
+ALTER TABLE ods_financial_statement ADD COLUMN IF NOT EXISTS roa DECIMAL(10,4);
+ALTER TABLE ods_financial_statement ADD COLUMN IF NOT EXISTS net_margin DECIMAL(10,4);
+ALTER TABLE ods_financial_statement ADD COLUMN IF NOT EXISTS revenue_yoy DECIMAL(10,4);
+
+-- ODS: Daily basic (valuation / liquidity / size inputs)
+CREATE TABLE IF NOT EXISTS ods_daily_basic (
+    security_id VARCHAR(50) NOT NULL,
+    trade_date DATE NOT NULL,
+    close DECIMAL(18,4),
+    turnover_rate DECIMAL(10,4),
+    turnover_rate_f DECIMAL(10,4),
+    volume_ratio DECIMAL(10,4),
+    pe DECIMAL(18,6),
+    pe_ttm DECIMAL(18,6),
+    pb DECIMAL(18,6),
+    ps DECIMAL(18,6),
+    ps_ttm DECIMAL(18,6),
+    dv_ratio DECIMAL(10,4),
+    dv_ttm DECIMAL(10,4),
+    total_share DECIMAL(20,4),
+    float_share DECIMAL(20,4),
+    total_mv DECIMAL(20,4),
+    circ_mv DECIMAL(20,4),
+    source VARCHAR(20),
+    ingest_batch_id VARCHAR(50),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (security_id, trade_date)
+);
+
+-- ODS: Index daily (benchmark / beta)
+CREATE TABLE IF NOT EXISTS ods_index_daily (
+    index_id VARCHAR(50) NOT NULL,
+    trade_date DATE NOT NULL,
+    open DECIMAL(18,4),
+    high DECIMAL(18,4),
+    low DECIMAL(18,4),
+    close DECIMAL(18,4),
+    pre_close DECIMAL(18,4),
+    pct_change DECIMAL(10,4),
+    vol DECIMAL(20,2),
+    amount DECIMAL(20,4),
+    source VARCHAR(20),
+    ingest_batch_id VARCHAR(50),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (index_id, trade_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ods_daily_basic_trade_date ON ods_daily_basic(trade_date);
+CREATE INDEX IF NOT EXISTS idx_ods_index_daily_trade_date ON ods_index_daily(trade_date);

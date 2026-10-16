@@ -18,5 +18,16 @@ def load_table_contracts() -> dict:
         return yaml.safe_load(f)
 
 
+def load_universe(name: str = "universe_pilot") -> dict:
+    """Load a pilot universe config (ts_codes + benchmark_index)."""
+    path = BASE_DIR / f"{name}.yml"
+    with path.open("r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    return {
+        "ts_codes": list(data.get("ts_codes", [])),
+        "benchmark_index": data.get("benchmark_index", "000300.SH"),
+    }
+
+
 CONTRACTS = load_table_contracts()
 
