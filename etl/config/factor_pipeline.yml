@@ -1,0 +1,42 @@
+# Factor pipeline configuration: which factors to compute and how.
+# zscore: apply per-date winsorized cross-sectional z-score before storing.
+zscore: true
+calc_version: "v1"
+
+factors:
+  # valuation
+  - PE_TTM
+  - PB
+  - PS_TTM
+  - DIVIDEND_YIELD_TTM
+  - EARNINGS_YIELD
+  - BOOK_YIELD
+  - PEG
+  # quality
+  - ROE_TTM
+  - ROA_TTM
+  - GROSS_MARGIN
+  - NET_MARGIN
+  - DEBT_TO_EQUITY
+  - OCF_TO_NETPROFIT
+  # growth
+  - REV_GROWTH_YOY
+  - NP_GROWTH_YOY
+  - REV_GROWTH_3Y
+  - NP_GROWTH_3Y
+  # momentum
+  - MOM_20D
+  - MOM_60D
+  - MOM_120D
+  - VOL_MOM_20D
+  # volatility / risk
+  - VOLATILITY_20D
+  - VOLATILITY_120D
+  - MAX_DRAWDOWN_120D
+  - BETA_120D
+  # liquidity / size / filters
+  - TURNOVER_20D
+  - AMOUNT_20D
+  - LOG_TOTAL_MV
+  - ILLIQUIDITY_20D
+  - PRICE_LEVEL

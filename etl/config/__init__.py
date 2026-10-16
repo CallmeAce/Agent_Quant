@@ -29,5 +29,17 @@ def load_universe(name: str = "universe_pilot") -> dict:
     }
 
 
+def load_factor_pipeline() -> dict:
+    """Load the factor pipeline config (factor_ids + zscore flag)."""
+    path = BASE_DIR / "factor_pipeline.yml"
+    with path.open("r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    return {
+        "factor_ids": list(data.get("factors", [])),
+        "zscore": bool(data.get("zscore", True)),
+        "calc_version": data.get("calc_version", "v1"),
+    }
+
+
 CONTRACTS = load_table_contracts()
 
