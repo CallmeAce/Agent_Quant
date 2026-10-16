@@ -236,3 +236,14 @@ dwd_strategy_position:
     trade_date: DATE
     weight: DECIMAL(10,6)
 
+ops_job_run:
+  primary_key: [id]
+  fields:
+    id: INT
+    job_name: STRING
+    run_time: DATETIME
+    status: STRING
+    duration_seconds: DECIMAL(12,4)
+    rows_affected: INT
+    message: STRING
+

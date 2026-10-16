@@ -331,3 +331,33 @@ CREATE TABLE IF NOT EXISTS dwd_strategy_position (
 
 CREATE INDEX IF NOT EXISTS idx_dwd_strategy_nav_run ON dwd_strategy_nav(run_id);
 CREATE INDEX IF NOT EXISTS idx_dwd_strategy_position_run ON dwd_strategy_position(run_id);
+
+-- ============================================================
+-- Phase E: job run monitoring + data freshness
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS ops_job_run (
+    id SERIAL PRIMARY KEY,
+    job_name VARCHAR(80) NOT NULL,
+    run_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20),
+    duration_seconds DECIMAL(12,4),
+    rows_affected INT,
+    message TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_ops_job_run_job_name ON ops_job_run(job_name);
+CREATE INDEX IF NOT EXISTS idx_ops_job_run_run_time ON ops_job_run(run_time);
+
+CREATE OR REPLACE VIEW v_data_freshness AS
+SELECT 'ods_daily_bar' AS table_name, MAX(trade_date) AS latest_date, COUNT(*) AS row_count FROM ods_daily_bar
+UNION ALL
+SELECT 'ods_daily_basic', MAX(trade_date), COUNT(*) FROM ods_daily_basic
+UNION ALL
+SELECT 'ods_financial_statement', MAX(report_period), COUNT(*) FROM ods_financial_statement
+UNION ALL
+SELECT 'ods_index_daily', MAX(trade_date), COUNT(*) FROM ods_index_daily
+UNION ALL
+SELECT 'dwd_factor_value', MAX(trade_date), COUNT(*) FROM dwd_factor_value
+UNION ALL
+SELECT 'dm_strategy_signal', MAX(signal_time), COUNT(*) FROM dm_strategy_signal;
