@@ -58,6 +58,9 @@ htmlcov/
 .tox/
 .ruff_cache/
 
+# Agent / editor local config
+.claude/settings.local.json
+
 # Misc
 *.bak
 *.tmp
