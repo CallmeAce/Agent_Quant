@@ -1,1 +1,0 @@
-# Loaders tests package
