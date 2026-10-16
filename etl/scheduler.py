@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import time
 from datetime import datetime, date, timedelta, timezone
 from typing import Callable, Dict, List, Optional
 import traceback
@@ -21,11 +22,20 @@ from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import create_engine, text  # type: ignore
 from telegram.ext import Application
 
+from etl.config import load_strategies, load_universe  # type: ignore
 from etl.jobs import (
+    job_compute_factors,
+    job_generate_signals,
     job_qmt_daily_position,
+    job_run_backtest,
+    job_sync_daily_basic,
+    job_sync_financials,
+    job_sync_index_daily,
     job_sync_security,
+    job_sync_trade_calendar,
     job_tushare_daily_bar,
 )
+from etl.monitoring import record_job_run
 
 logger = logging.getLogger(__name__)
 
@@ -56,26 +66,34 @@ class Job:
         self.retries = retries
         self.last_run: Optional[datetime] = None
         self.last_status: Optional[str] = None
+        self.last_rows: int = 0
+        self.last_duration: float = 0.0
 
     async def run(self) -> bool:
         """Execute the job."""
         logger.info(f"Starting job: {self.name}")
         self.last_run = datetime.now(timezone.utc)
+        started = time.monotonic()
+        self.last_rows = 0
 
         try:
             if asyncio.iscoroutinefunction(self.func):
-                await asyncio.wait_for(self.func(), timeout=self.timeout)
+                result = await asyncio.wait_for(self.func(), timeout=self.timeout)
             else:
-                self.func()
+                result = await asyncio.to_thread(self.func)
             self.last_status = "success"
+            self.last_rows = result if isinstance(result, int) else 0
+            self.last_duration = time.monotonic() - started
             logger.info(f"Job completed: {self.name}")
             return True
         except asyncio.TimeoutError:
             self.last_status = "timeout"
+            self.last_duration = time.monotonic() - started
             logger.error(f"Job timeout: {self.name}")
             return False
         except Exception as e:
             self.last_status = "failed"
+            self.last_duration = time.monotonic() - started
             logger.error(f"Job failed: {self.name} - {e}")
             logger.error(traceback.format_exc())
             return False
@@ -137,6 +155,62 @@ class Scheduler:
             timeout=300,
         )
 
+        # --- Factor / strategy / backtest pipeline ---
+        self.jobs["sync_trade_calendar"] = Job(
+            name="sync_trade_calendar",
+            func=self._job_sync_trade_calendar,
+            schedule="weekly",
+            cron={"day_of_week": "mon", "hour": 8, "minute": 0},
+            timeout=600,
+        )
+        self.jobs["sync_index_daily"] = Job(
+            name="sync_index_daily",
+            func=self._job_sync_index_daily,
+            schedule="daily",
+            cron={"hour": 16, "minute": 10},
+            timeout=600,
+        )
+        self.jobs["sync_daily_basic"] = Job(
+            name="sync_daily_basic",
+            func=self._job_sync_daily_basic,
+            schedule="daily",
+            cron={"hour": 16, "minute": 20},
+            dependencies=["sync_security"],
+            timeout=3600,
+        )
+        self.jobs["sync_financials"] = Job(
+            name="sync_financials",
+            func=self._job_sync_financials,
+            schedule="weekly",
+            cron={"day_of_week": "sun", "hour": 20, "minute": 0},
+            dependencies=["sync_security"],
+            timeout=7200,
+        )
+        self.jobs["compute_factors"] = Job(
+            name="compute_factors",
+            func=self._job_compute_factors,
+            schedule="daily",
+            cron={"hour": 17, "minute": 30},
+            dependencies=["tushare_daily_bar", "sync_daily_basic"],
+            timeout=3600,
+        )
+        self.jobs["generate_signals"] = Job(
+            name="generate_signals",
+            func=self._job_generate_signals,
+            schedule="daily",
+            cron={"hour": 18, "minute": 0},
+            dependencies=["compute_factors"],
+            timeout=1800,
+        )
+        self.jobs["run_backtest"] = Job(
+            name="run_backtest",
+            func=self._job_run_backtest,
+            schedule="daily",
+            cron={"hour": 18, "minute": 30},
+            dependencies=["generate_signals"],
+            timeout=3600,
+        )
+
     async def _job_sync_security(self) -> None:
         """Sync dim_security from Tushare stock_basic."""
         logger.info("Syncing security master from Tushare")
@@ -168,6 +242,56 @@ class Scheduler:
             account_ids,
             self.database_url,
         )
+
+    def _window(self, days: int) -> tuple:
+        end = date.today()
+        return end - timedelta(days=days), end
+
+    async def _job_sync_trade_calendar(self) -> None:
+        start, end = self._window(400)
+        await asyncio.to_thread(
+            job_sync_trade_calendar.run, "SSE", start, end, self.tushare_token, self.database_url
+        )
+
+    async def _job_sync_index_daily(self) -> None:
+        benchmark = load_universe()["benchmark_index"]
+        start, end = self._window(400)
+        await asyncio.to_thread(
+            job_sync_index_daily.run, benchmark, start, end, self.tushare_token, self.database_url
+        )
+
+    async def _job_sync_daily_basic(self) -> None:
+        ts_codes = load_universe()["ts_codes"]
+        start, end = self._window(400)
+        await asyncio.to_thread(
+            job_sync_daily_basic.run, ts_codes, start, end, self.tushare_token, self.database_url
+        )
+
+    async def _job_sync_financials(self) -> None:
+        ts_codes = load_universe()["ts_codes"]
+        start, end = self._window(1200)
+        await asyncio.to_thread(
+            job_sync_financials.run, ts_codes, start, end, self.tushare_token, self.database_url
+        )
+
+    async def _job_compute_factors(self) -> int:
+        start, end = self._window(400)
+        return await asyncio.to_thread(job_compute_factors.run, start, end, self.database_url)
+
+    async def _job_generate_signals(self) -> int:
+        start, end = self._window(400)
+        return await asyncio.to_thread(job_generate_signals.run, start, end, self.database_url)
+
+    async def _job_run_backtest(self) -> int:
+        start, end = self._window(400)
+        benchmark = load_universe()["benchmark_index"]
+        total = 0
+        for sid in load_strategies():
+            await asyncio.to_thread(
+                job_run_backtest.run, sid, start, end, self.database_url, benchmark
+            )
+            total += 1
+        return total
 
     async def _job_health_check(self) -> None:
         """Run health checks on all systems."""
@@ -201,12 +325,27 @@ class Scheduler:
         # Run with retries
         for attempt in range(job.retries):
             success = await job.run()
+            self._record_job_run(job)
             if success:
                 return True
             logger.warning(f"Retry {attempt + 1}/{job.retries} for job: {job_name}")
             await asyncio.sleep(60 * (attempt + 1))
 
         return False
+
+    def _record_job_run(self, job: "Job") -> None:
+        if not self.database_url:
+            return
+        try:
+            record_job_run(
+                self.database_url,
+                job.name,
+                job.last_status or "unknown",
+                rows_affected=job.last_rows,
+                duration_seconds=job.last_duration,
+            )
+        except Exception as exc:  # monitoring must never break the pipeline
+            logger.warning("failed to record job run %s: %s", job.name, exc)
 
     def _schedule_jobs(self) -> None:
         """Register cron triggers for all jobs that define a cron spec."""
