@@ -285,3 +285,49 @@ CREATE TABLE IF NOT EXISTS ods_index_daily (
 
 CREATE INDEX IF NOT EXISTS idx_ods_daily_basic_trade_date ON ods_daily_basic(trade_date);
 CREATE INDEX IF NOT EXISTS idx_ods_index_daily_trade_date ON ods_index_daily(trade_date);
+
+-- ============================================================
+-- Phase D: backtest result tables
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS dwd_backtest_run (
+    run_id VARCHAR(80) PRIMARY KEY,
+    strategy_id VARCHAR(50) NOT NULL,
+    start_date DATE,
+    end_date DATE,
+    benchmark_index VARCHAR(50),
+    cost_bps DECIMAL(10,4),
+    params TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS dwd_backtest_metrics (
+    run_id VARCHAR(80) PRIMARY KEY,
+    total_return DECIMAL(12,6),
+    annual_return DECIMAL(12,6),
+    sharpe DECIMAL(12,6),
+    max_drawdown DECIMAL(12,6),
+    win_rate DECIMAL(12,6),
+    turnover DECIMAL(12,6),
+    benchmark_return DECIMAL(12,6),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS dwd_strategy_nav (
+    run_id VARCHAR(80) NOT NULL,
+    trade_date DATE NOT NULL,
+    nav DECIMAL(18,8),
+    benchmark_nav DECIMAL(18,8),
+    PRIMARY KEY (run_id, trade_date)
+);
+
+CREATE TABLE IF NOT EXISTS dwd_strategy_position (
+    run_id VARCHAR(80) NOT NULL,
+    security_id VARCHAR(50) NOT NULL,
+    trade_date DATE NOT NULL,
+    weight DECIMAL(10,6),
+    PRIMARY KEY (run_id, security_id, trade_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_dwd_strategy_nav_run ON dwd_strategy_nav(run_id);
+CREATE INDEX IF NOT EXISTS idx_dwd_strategy_position_run ON dwd_strategy_position(run_id);

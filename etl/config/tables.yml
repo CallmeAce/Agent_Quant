@@ -195,3 +195,44 @@ dm_strategy_signal:
     source: STRING
     created_at: DATETIME
 
+dwd_backtest_run:
+  primary_key: [run_id]
+  fields:
+    run_id: STRING
+    strategy_id: STRING
+    start_date: DATE
+    end_date: DATE
+    benchmark_index: STRING
+    cost_bps: DECIMAL(10,4)
+    params: STRING
+    created_at: DATETIME
+
+dwd_backtest_metrics:
+  primary_key: [run_id]
+  fields:
+    run_id: STRING
+    total_return: DECIMAL(12,6)
+    annual_return: DECIMAL(12,6)
+    sharpe: DECIMAL(12,6)
+    max_drawdown: DECIMAL(12,6)
+    win_rate: DECIMAL(12,6)
+    turnover: DECIMAL(12,6)
+    benchmark_return: DECIMAL(12,6)
+    created_at: DATETIME
+
+dwd_strategy_nav:
+  primary_key: [run_id, trade_date]
+  fields:
+    run_id: STRING
+    trade_date: DATE
+    nav: DECIMAL(18,8)
+    benchmark_nav: DECIMAL(18,8)
+
+dwd_strategy_position:
+  primary_key: [run_id, security_id, trade_date]
+  fields:
+    run_id: STRING
+    security_id: STRING
+    trade_date: DATE
+    weight: DECIMAL(10,6)
+
