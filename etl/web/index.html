@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Openclaw Quant Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="/static/echarts.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Openclaw Quant Dashboard</h1>
+    <nav>
+      <button data-view="monitor" class="active">模块监控</button>
+      <button data-view="backtest">回测表现</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="view-monitor" class="view active">
+      <h2>系统状态 / 数据新鲜度</h2>
+      <div id="freshness" class="grid"></div>
+      <h2>任务运行记录</h2>
+      <table id="jobs"><thead><tr><th>Job</th><th>时间</th><th>状态</th><th>行数</th><th>耗时(s)</th></tr></thead><tbody></tbody></table>
+    </section>
+
+    <section id="view-backtest" class="view">
+      <h2>回测列表</h2>
+      <table id="runs"><thead><tr><th>Run</th><th>策略</th><th>区间</th><th>总收益</th><th>年化</th><th>Sharpe</th><th>最大回撤</th></tr></thead><tbody></tbody></table>
+      <div id="run-detail" class="detail">
+        <div id="metrics" class="cards"></div>
+        <div id="nav-chart" class="chart"></div>
+        <h3>持仓</h3>
+        <table id="positions"><thead><tr><th>Security</th><th>Date</th><th>Weight</th></tr></thead><tbody></tbody></table>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/monitor.js"></script>
+  <script src="/static/backtest.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

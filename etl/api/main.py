@@ -9,15 +9,19 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import create_engine, text  # type: ignore
 
 from etl.config import load_strategies  # type: ignore
 from etl.monitoring import get_data_freshness, get_recent_job_runs, get_system_status
 
 app = FastAPI(title="Openclaw Quant API", version="0.2.0")
+WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 
 
 def _db_url() -> str:
@@ -35,8 +39,8 @@ def _query(sql: str, params: Optional[dict] = None) -> list:
 
 
 @app.get("/")
-async def root():
-    return {"message": "Openclaw Quant API", "version": "0.2.0"}
+async def index():
+    return FileResponse(str(WEB_DIR / "index.html"))
 
 
 @app.get("/health")
@@ -127,3 +131,6 @@ async def get_backtest(run_id: str):
     nav = _query("SELECT trade_date, nav, benchmark_nav FROM dwd_strategy_nav WHERE run_id = :r ORDER BY trade_date", {"r": run_id})
     positions = _query("SELECT security_id, trade_date, weight FROM dwd_strategy_position WHERE run_id = :r ORDER BY trade_date, weight DESC", {"r": run_id})
     return {"run": run[0], "metrics": metrics[0] if metrics else {}, "nav": nav, "positions": positions}
+
+
+app.mount("/static", StaticFiles(directory=str(WEB_DIR)), name="static")
