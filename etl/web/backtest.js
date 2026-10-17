@@ -1,5 +1,5 @@
 let navChart = null;
-let openRunId = null;
+let openRow = null;
 
 function ensureChart() {
   const el = document.getElementById("nav-chart");
@@ -10,11 +10,25 @@ function ensureChart() {
   return navChart;
 }
 
-function collapseDetail() {
-  openRunId = null;
+function closeDetail() {
+  if (openRow) {
+    openRow.removeAttribute("data-open");
+    openRow.classList.remove("active");
+    openRow = null;
+  }
   document.getElementById("run-detail").classList.add("hidden");
-  document.querySelectorAll("#runs tbody tr.active").forEach((r) => r.classList.remove("active"));
   if (navChart) navChart.clear();
+}
+
+function openDetail(row) {
+  if (openRow && openRow !== row) {
+    openRow.removeAttribute("data-open");
+    openRow.classList.remove("active");
+  }
+  openRow = row;
+  row.setAttribute("data-open", "1");
+  row.classList.add("active");
+  loadRunDetail(row.dataset.run);
 }
 
 async function loadBacktests() {
@@ -27,15 +41,8 @@ async function loadBacktests() {
     }).join("");
     tbody.querySelectorAll("tr").forEach((tr) =>
       tr.addEventListener("click", () => {
-        const rid = tr.dataset.run;
-        if (openRunId === rid) {
-          collapseDetail(); // click again -> collapse
-        } else {
-          openRunId = rid;
-          document.querySelectorAll("#runs tbody tr.active").forEach((r) => r.classList.remove("active"));
-          tr.classList.add("active");
-          loadRunDetail(rid);
-        }
+        if (tr.getAttribute("data-open") === "1") closeDetail();
+        else openDetail(tr);
       })
     );
   } catch (e) {
@@ -54,6 +61,14 @@ async function loadRunDetail(runId) {
       ["基准收益", pct(m.benchmark_return)],
     ].map(([k, v]) => `<div class="card"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
 
+    const tbody = document.querySelector("#positions tbody");
+    tbody.innerHTML = (d.positions || []).map((p) =>
+      `<tr><td>${p.security_id}</td><td>${p.trade_date}</td><td>${(Number(p.weight) * 100).toFixed(2)}%</td></tr>`
+    ).join("");
+
+    // make the panel visible BEFORE initializing/resizing the chart so it has real size
+    document.getElementById("run-detail").classList.remove("hidden");
+
     const nav = d.nav || [];
     const chart = ensureChart();
     if (chart) {
@@ -71,16 +86,15 @@ async function loadRunDetail(runId) {
       }, true);
       chart.resize();
     }
-
-    const tbody = document.querySelector("#positions tbody");
-    tbody.innerHTML = (d.positions || []).map((p) =>
-      `<tr><td>${p.security_id}</td><td>${p.trade_date}</td><td>${(Number(p.weight) * 100).toFixed(2)}%</td></tr>`
-    ).join("");
-
-    document.getElementById("run-detail").classList.remove("hidden");
   } catch (e) {
     console.error("loadRunDetail failed", e);
   }
 }
+
 window.loadBacktests = loadBacktests;
 window.resizeCharts = () => navChart && navChart.resize();
+
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("close-detail");
+  if (btn) btn.addEventListener("click", closeDetail);
+});

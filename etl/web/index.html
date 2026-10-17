@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Openclaw Quant Dashboard</title>
-  <link rel="stylesheet" href="/static/style.css?v=4" />
+  <link rel="stylesheet" href="/static/style.css?v=5" />
   <script src="/static/echarts.min.js"></script>
 </head>
 <body>
@@ -29,6 +29,7 @@
       <h2>回测列表</h2>
       <table id="runs"><thead><tr><th>Run</th><th>策略</th><th>区间</th><th>总收益</th><th>年化</th><th>Sharpe</th><th>最大回撤</th></tr></thead><tbody></tbody></table>
       <div id="run-detail" class="detail hidden">
+        <div class="detail-bar"><button id="close-detail">收起 ×</button></div>
         <div id="metrics" class="cards"></div>
         <div id="nav-chart" class="chart"></div>
         <h3>持仓</h3>
@@ -37,8 +38,8 @@
     </section>
   </main>
 
-  <script src="/static/monitor.js?v=4"></script>
-  <script src="/static/backtest.js?v=4"></script>
-  <script src="/static/app.js?v=4"></script>
+  <script src="/static/monitor.js?v=5"></script>
+  <script src="/static/backtest.js?v=5"></script>
+  <script src="/static/app.js?v=5"></script>
 </body>
 </html>
