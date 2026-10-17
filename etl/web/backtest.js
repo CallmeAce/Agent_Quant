@@ -1,4 +1,5 @@
 let navChart = null;
+let openRunId = null;
 
 function ensureChart() {
   const el = document.getElementById("nav-chart");
@@ -9,6 +10,13 @@ function ensureChart() {
   return navChart;
 }
 
+function collapseDetail() {
+  openRunId = null;
+  document.getElementById("run-detail").classList.add("hidden");
+  document.querySelectorAll("#runs tbody tr.active").forEach((r) => r.classList.remove("active"));
+  if (navChart) navChart.clear();
+}
+
 async function loadBacktests() {
   try {
     const runs = await fetch("/api/v1/backtests?limit=50").then((r) => r.json());
@@ -17,8 +25,19 @@ async function loadBacktests() {
       const tr = (v) => v == null ? "-" : (Number(v) * 100).toFixed(2) + "%";
       return `<tr data-run="${x.run_id}"><td>${x.run_id}</td><td>${x.strategy_id}</td><td>${x.start_date} ~ ${x.end_date}</td><td class="${Number(x.total_return) >= 0 ? "pos" : "neg"}">${tr(x.total_return)}</td><td>${tr(x.annual_return)}</td><td>${x.sharpe ?? "-"}</td><td class="neg">${tr(x.max_drawdown)}</td></tr>`;
     }).join("");
-    tbody.querySelectorAll("tr").forEach((tr) => tr.addEventListener("click", () => loadRunDetail(tr.dataset.run)));
-    if (runs && runs.length) loadRunDetail(runs[0].run_id); // auto-open first run so a chart shows immediately
+    tbody.querySelectorAll("tr").forEach((tr) =>
+      tr.addEventListener("click", () => {
+        const rid = tr.dataset.run;
+        if (openRunId === rid) {
+          collapseDetail(); // click again -> collapse
+        } else {
+          openRunId = rid;
+          document.querySelectorAll("#runs tbody tr.active").forEach((r) => r.classList.remove("active"));
+          tr.classList.add("active");
+          loadRunDetail(rid);
+        }
+      })
+    );
   } catch (e) {
     console.error("loadBacktests failed", e);
   }
@@ -57,6 +76,8 @@ async function loadRunDetail(runId) {
     tbody.innerHTML = (d.positions || []).map((p) =>
       `<tr><td>${p.security_id}</td><td>${p.trade_date}</td><td>${(Number(p.weight) * 100).toFixed(2)}%</td></tr>`
     ).join("");
+
+    document.getElementById("run-detail").classList.remove("hidden");
   } catch (e) {
     console.error("loadRunDetail failed", e);
   }
