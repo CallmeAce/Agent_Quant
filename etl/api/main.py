@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import create_engine, text  # type: ignore
@@ -22,6 +22,14 @@ from etl.monitoring import get_data_freshness, get_recent_job_runs, get_system_s
 
 app = FastAPI(title="Openclaw Quant API", version="0.2.0")
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
+
+
+@app.middleware("http")
+async def no_cache_ui(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path == "/" or request.url.path.startswith("/static"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
 
 
 def _db_url() -> str:
